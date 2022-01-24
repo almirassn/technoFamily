@@ -1,0 +1,144 @@
+# define m1_1 2
+# define m1_2 15
+# define m2_1 34
+# define m2_2 35
+
+#include <WiFi.h>
+
+const char* ssid     = "XXXXXXXXX";
+const char* password = "XXXXXXXXXX";
+
+WiFiServer server(80);
+
+void setup()
+{
+    Serial.begin(115200);
+    pinMode(m1_1, OUTPUT);      // set the LED pin mode
+    pinMode(m1_2, OUTPUT);
+    pinMode(m2_1, OUTPUT);
+    pinMode(m2_2, OUTPUT);
+/*
+    digitalWrite(m1_1, LOW);  // M1
+    digitalWrite(m1_2, LOW); //M1
+    digitalWrite(m2_1, LOW);  //M2
+    digitalWrite(m2_2, LOW);  //M2
+
+*/
+    delay(10);
+
+    // We start by connecting to a WiFi network
+
+    Serial.println();
+    Serial.println();
+    Serial.print("Connecting to ");
+    Serial.println(ssid);
+
+    WiFi.begin(ssid, password);
+
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+
+    Serial.println("");
+    Serial.println("WiFi connected.");
+    Serial.println("IP address: ");
+    Serial.println(WiFi.localIP());
+    
+    server.begin();
+
+}
+
+int value = 0;
+
+void loop(){
+ WiFiClient client = server.available();   // listen for incoming clients
+
+  if (client) {                             // if you get a client,
+    Serial.println("New Client.");           // print a message out the serial port
+    String currentLine = "";                // make a String to hold incoming data from the client
+    while (client.connected()) {            // loop while the client's connected
+      if (client.available()) {             // if there's bytes to read from the client,
+        char c = client.read();             // read a byte, then
+        Serial.write(c);                    // print it out the serial monitor
+        if (c == '\n') {                    // if the byte is a newline character
+
+          // if the current line is blank, you got two newline characters in a row.
+          // that's the end of the client HTTP request, so send a response:
+          if (currentLine.length() == 0) {
+            // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
+            // and a content-type so the client knows what's coming, then a blank line:
+            client.println("HTTP/1.1 200 OK");
+            client.println("Content-type:text/html");
+            client.println();
+
+            // the content of the HTTP response follows the header:
+           /*
+            client.print("Click <a href=\"/H\">here</a> FRENTE.<br>");
+            client.print("Click <a href=\"/L\">here</a> TRAS.<br>");
+            client.print("Click <a href=\"/S\">here</a> PARAR.<br>");
+            */
+
+
+            client.println ("<html>");
+            client.println ("<head><meta content=\"width = device-width, initial=scale=1\">");
+            client.println ("<style>html { margin: 0px auto; text-align: center;}");
+            
+            client.println (".frente { background-color: #00FF00; color: white; padding: 15px 40px; border-radius: 25px;}");
+            client.println (".parar { background-color: #0000FF; color: white; padding: 15px 40px; border-radius: 25px;}");
+
+            client.println (".esquerda { background-color: #00000F; color: white; padding: 10px 40px; border-radius: 25px;}");
+            client.println (".direita { background-color: #000FF0; color: white; padding: 15px 45px; border-radius: 25px;}");
+            
+            client.println (".tras { background-color:#FF0000; color: white; padding: 15px 40px; border-radius: 25px;}</style></head>");
+           
+            client.println ("<body><h1>Controle Wi-fi</h1>");
+   
+            client.print("<p><a href=\"/H\"><button class=\"frente\">FRENTE</button></a></p>");
+            client.print("<p><a href=\"/S\"><button class=\"parar\">PARAR</button></a></p>");
+            client.print("<p><a href=\"/L\"><button class=\"tras\">TRAS</button></a></p>");
+
+            client.print("<p><a href=\"/E\"><button class=\"esquerda\">ESQUERDA</button></a></p>");
+            client.print("<p><a href=\"/D\"><button class=\"direita\">DIREITA</button></a></p>");
+            
+            
+            client.println("</body></html>");
+
+            
+            // The HTTP response ends with another blank line:
+            client.println();
+            // break out of the while loop:
+            break;
+          } else {    // if you got a newline, then clear currentLine:
+            currentLine = "";
+          }
+        } else if (c != '\r') {  // if you got anything else but a carriage return character,
+          currentLine += c;      // add it to the end of the currentLine
+        }
+
+        // Check to see if the client request was "GET /H" or "GET /L":
+        if (currentLine.endsWith("GET /H")) {
+         digitalWrite(m1_1, HIGH);  // M1
+         digitalWrite(m1_2, LOW); //M1
+         digitalWrite(m2_1,HIGH);  //M2
+         digitalWrite(m2_2, LOW);  //M2               // GET /H turns the LED on
+        }
+        if (currentLine.endsWith("GET /L")) {
+          digitalWrite(m1_1, LOW);  // M1
+         digitalWrite(m1_2, HIGH); //M1
+         digitalWrite(m2_1, LOW);  //M2
+         digitalWrite(m2_2, HIGH);  //M2                // GET /L turns the LED off
+        }
+        if (currentLine.endsWith("GET /S")) {
+          digitalWrite(m1_1, LOW);  // M1
+         digitalWrite(m1_2, LOW); //M1
+         digitalWrite(m2_1, LOW);  //M2
+         digitalWrite(m2_2, LOW);  //M2                // GET /L turns the LED off
+        }
+      }
+    }
+    // close the connection:
+    client.stop();
+    Serial.println("Client Disconnected.");
+  }
+}
